@@ -1,3 +1,5 @@
+CREATE EXTENSION citext;
+
 -- Reset
 DROP TABLE IF EXISTS voter_tag;
 DROP TABLE IF EXISTS voter;
@@ -17,7 +19,7 @@ CREATE TABLE voter (
 
 CREATE TABLE tag (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name citext UNIQUE,
+    name CITEXT UNIQUE
 );
 
 CREATE TABLE voter_tag (

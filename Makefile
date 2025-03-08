@@ -80,4 +80,4 @@ install-dependencies:
 .PHONY: build-node
 build-node:
 	@(cd backend && pnpm install)
-	@(cd frontend && pnpm install)
+	@(cd frontend && npm install)

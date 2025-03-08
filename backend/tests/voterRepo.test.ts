@@ -1,4 +1,4 @@
-import {getVoterById} from "../src/voterRepo";
+import {getVoterById} from "../src/voterService";
 import {mockUserId} from "./mockDb";
 import {Pool} from "pg";
 import {SQL_STATEMENTS} from "../src/constants";

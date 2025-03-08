@@ -10,5 +10,4 @@ asdf install nodejs 22.14.0
 asdf set nodejs 22.14.0
 asdf cmd nodejs update-nodebuild
 
-
 exit 0

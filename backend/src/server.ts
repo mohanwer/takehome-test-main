@@ -2,10 +2,10 @@ import express, { Express, Request, Response } from "express";
 import pool, { knex, knexQuery, withTransaction } from "./db";
 import { wrapAsyncRoute } from "./expressUtil";
 import cors from "cors";
-import { getVoterById } from "./voterRepo";
+import { getVoterById } from "./voterService";
 import { errorToResponse, InvalidParamsError, VoterNotFoundError } from "./errors";
 import { validate as uuidValidate } from 'uuid';
-import { addVoterTag, getTagsForVoterId } from "./tagService";
+import {addVoterTag, getVoterTagsByVoterId, removeVoterTag} from "./tagService";
 
 // Construct an Express app and add middleware to parse JSON requests and
 // add CORS headers
@@ -29,7 +29,7 @@ app.get(
       if (!voter) {
         throw new VoterNotFoundError(id);
       }
-      const tags = await getTagsForVoterId(client, id);
+      const tags = await getVoterTagsByVoterId(client, id);
       res.json({ voter: voter, tags: tags });
     });
   })
@@ -41,25 +41,27 @@ app.post(
     // TODO: fill this in to actually query the database and add the tag to
     // the voter with the given ID
     const params = req.params;
+    const body = req.body;
+
     const invalidParams = [];
-    if (!params.voterId || !uuidValidate(params.voterId)) {
-      invalidParams.push('voterId');
+    if (!params.id || !uuidValidate(params.id)) {
+      invalidParams.push('id');
     }
-    if (!params.tagName || params.tagName.length <= 2) {
-      invalidParams.push('tagName');
+    if (!body.name || body.name.length <= 2) {
+      invalidParams.push('name');
     }
     if (invalidParams.length > 0) {
       throw new InvalidParamsError(invalidParams);
     }
-    const { tagName, voterId } = params;
 
+    const tagName = body.name, voterId = params.id;
     await withTransaction(async client => {
       const voter = await getVoterById(client, voterId);
       if (!voter) {
         throw new VoterNotFoundError(voterId);
       }
-      await addVoterTag(client, { voterId, tagName });
-      const tags = await getTagsForVoterId(client, voterId);
+      await addVoterTag(client, { voterId, name: tagName });
+      const tags = await getVoterTagsByVoterId(client, voterId);
       res.json({ voter: voter, tags: tags });
     });
   })
@@ -70,16 +72,31 @@ app.post(
   wrapAsyncRoute(async (req: Request, res: Response) => {
     // TODO: fill this in to actually query the database and remove the tag
     // from the voter with the given ID
-    res.json({
-      id: req.params.id,
-      firstName: "John",
-      lastName: "Doe",
-      address1: "123 Main St",
-      address2: "Apt 1",
-      city: "San Francisco",
-      state: "CA",
-      zip: "94105",
-      tags: ["A", "B", "C"],
+
+    const params = req.params;
+    const body = req.body;
+
+    const invalidParams = [];
+    if (!params.id || !uuidValidate(params.id)) {
+      invalidParams.push('id');
+    }
+    if (!body.voterTagId || !uuidValidate(body.voterTagId)) {
+      invalidParams.push('voterTagId');
+    }
+    if (invalidParams.length > 0) {
+      throw new InvalidParamsError(invalidParams);
+    }
+
+    const voterTagId = body.voterTagId, voterId = params.id;
+    await withTransaction(async client => {
+      const voter = await getVoterById(client, voterId);
+      if (!voter) {
+        throw new VoterNotFoundError(voterId);
+      }
+
+      await removeVoterTag(client, voterTagId);
+      const tags = await getVoterTagsByVoterId(client, voterId);
+      res.json({ voter: voter, tags: tags });
     });
   })
 );

@@ -1,4 +1,17 @@
--- Sample data
+-- Tags
+
+INSERT INTO tag (name) VALUES
+    ('Supporter'),
+    ('Volunteer'),
+    ('Donor'),
+    ('NeedsFollowUp'),
+    ('MadeVotePlan'),
+    ('HasVoted'),
+    ('VotesByMail'),
+    ('VotesEarly'),
+    ('VotesInPerson'),
+    ('NeedsRide'),
+    ('NeedsPersuasion');-- Sample data
 
 INSERT INTO voter (first_name, last_name, address1, address2, city, state, zip)
 VALUES

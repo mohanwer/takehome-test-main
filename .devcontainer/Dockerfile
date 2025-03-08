@@ -30,6 +30,8 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
 
 RUN chown -R $USERNAME:$USERNAME /asdf
+COPY install-dependencies.sh .
+RUN chmod +x ./install-dependencies.sh
 USER $USERNAME
 
 RUN mkdir ~/.asdf
@@ -38,5 +40,4 @@ RUN mv /asdf/asdf ~/.asdf/asdf
 
 RUN echo "export PATH=$PATH:$HOME/.asdf:$HOME/.asdf/shims" >> ~/.bashrc
 
-COPY install-dependencies.sh .
 RUN ./install-dependencies.sh

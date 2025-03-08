@@ -2,7 +2,7 @@ import request from 'supertest';
 import { app } from '../../src/server';
 import { configDotenv } from "dotenv";
 import { afterAll, beforeAll } from "@jest/globals";
-import { createVoter, deleteVoter } from "../../src/voterRepo";
+import { createVoter, deleteVoter } from "../../src/voterService";
 import { faker } from '@faker-js/faker';
 import pool from "../../src/db";
 
@@ -41,7 +41,7 @@ describe('voter get endpoint', () => {
   it('gets voter by id', async () => {
     const response = await request(app).get(`/voters/${voterId}`).send();
     expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('id', voterId);
+    expect(response.body).toHaveProperty('voter.id', voterId);
   })
 
   it('returns 400 if voter id is not uuid', async () => {
