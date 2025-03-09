@@ -1,16 +1,21 @@
 import { SettingsNotFoundError } from "./errors";
 
-interface DbSettings {
-  host: string;
-  port: string;
-  user: string;
-  password: string;
-  database: string;
-  // These are intentionally required. We should always set these in a production
-  // environment to sensible values.
-  maxConnections: number;
-  idleTimeoutMillis: number;
-  connectionTimeoutMillis: number;
+export interface AppSettings {
+  db: {
+    host: string,
+    port: number,
+    user: string,
+    password: string,
+    database: string,
+    // These are intentionally required. We should always set these in a production
+    // environment to sensible values.
+    maxConnections: number,
+    idleTimeoutMillis: number,
+    connectionTimeoutMillis: number,
+  },
+  app: {
+    port: number,
+  }
 }
 
 const getEnv = (envVarName: string): string => {
@@ -21,15 +26,20 @@ const getEnv = (envVarName: string): string => {
   return value;
 }
 
-export const createDbSettingsFromEnv = (): DbSettings => {
+export const createAppSettingsFromEnv = (): AppSettings => {
   return {
-    host: getEnv('PGHOST'),
-    port: getEnv('PGPORT'),
-    user: getEnv('PGUSER'),
-    password: getEnv('PGPASSWORD'),
-    database: getEnv('PGDATABASE'),
-    maxConnections: parseInt(getEnv('PGMAXCONNECTIONS') || '20'),
-    idleTimeoutMillis: parseInt(getEnv('PGIDLETIMEOUTMILLIS') || '30000'),
-    connectionTimeoutMillis: parseInt(getEnv('PGCONNECTIONTIMEOUTMILLIS') || '2000'),
+    db: {
+      host: getEnv('PGHOST'),
+      port: parseInt(getEnv('PGPORT')),
+      user: getEnv('PGUSER'),
+      password: getEnv('PGPASSWORD'),
+      database: getEnv('PGDATABASE'),
+      maxConnections: parseInt(process.env['PGMAXCONNECTIONS'] || '20'),
+      idleTimeoutMillis: parseInt(process.env['PGIDLETIMEOUTMILLIS'] || '30000'),
+      connectionTimeoutMillis: parseInt(process.env['PGCONNECTIONTIMEOUTMILLIS'] || '2000'),
+    },
+    app: {
+      port: parseInt(process.env.PORT || '9099'),
+    }
   };
 }

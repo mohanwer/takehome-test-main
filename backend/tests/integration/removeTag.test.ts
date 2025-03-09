@@ -1,11 +1,12 @@
 import request from 'supertest';
-import { app } from '../../src/server';
 import { configDotenv } from "dotenv";
 import { afterAll, beforeAll } from "@jest/globals";
 import { createVoter, deleteVoter, Voter } from "../../src/voterService";
 import { faker } from '@faker-js/faker';
-import pool from "../../src/db";
+import {withTransaction} from "../../src/db";
 import {addTag, addVoterTag, deleteTag, Tag, VoterTag} from '../../src/tagService';
+import {createAppSettingsFromEnv} from "../../src/settings";
+import {createApp, ExpressA} from "../../src/app";
 
 configDotenv({ path: '.env.test' })
 
@@ -13,42 +14,45 @@ describe('remove tag endpoint', () => {
   let voter: Voter;
   let tag: Tag;
   let voterTag: VoterTag;
+  let app: ExpressA;
 
   beforeAll(
     async () => {
-      const client = await pool.connect();
-      voter = await createVoter(
-        client,
-        {
-          firstName: faker.person.firstName(),
-          lastName: faker.person.lastName(),
-          address1: faker.location.streetAddress(),
-          address2: faker.location.secondaryAddress(),
-          city: faker.location.city(),
-          state: faker.location.state(),
-          zip: faker.location.zipCode(),
-        }
-      );
-      tag = await addTag(client, faker.lorem.word(5));
-      voterTag = await addVoterTag(client, {voterId: voter.id, name: tag.name});
-      client.release();
+      configDotenv({path: ".env.test"});
+      const settings = createAppSettingsFromEnv();
+      app = createApp(settings);
+      await withTransaction(app.locals.dbPool, async client => {
+        voter = await createVoter(
+          client,
+          {
+            firstName: faker.person.firstName(),
+            lastName: faker.person.lastName(),
+            address1: faker.location.streetAddress(),
+            address2: faker.location.secondaryAddress(),
+            city: faker.location.city(),
+            state: faker.location.state(),
+            zip: faker.location.zipCode(),
+          }
+        );
+        tag = await addTag(client, faker.lorem.word(5));
+        voterTag = await addVoterTag(client, {voterId: voter.id, name: tag.name});
+      });
     }
   );
 
   afterAll(
     async () => {
-      const client = await pool.connect();
-      await deleteVoter(client, voter.id);
-      await deleteTag(client, tag.tagId);
-      client.release();
+      await withTransaction(app.locals.dbPool, async client => {
+        await deleteVoter(client, voter.id);
+        await deleteTag(client, tag.tagId);
+      });
     }
   )
 
   it('returns 200 if voter tag is removed', async () => {
     const response = await request(app).post(`/voters/${voter.id}/removeTag`).send({ voterTagId: voterTag.voterTagId });
     expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('tags', []);
-    expect(response.body).toHaveProperty('voter.id', voter.id);
+    expect(response.body).toHaveProperty('voterTagId', voterTag.voterTagId);
   });
 
   it('returns 400 if voter id is not uuid', async () => {

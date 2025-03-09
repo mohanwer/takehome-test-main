@@ -36,11 +36,11 @@ export class VoterNotFoundError extends ApplicationError {
 }
 
 export class InvalidParamsError extends ApplicationError {
-  invalidFields: string[];
+  validationFailureReasons: string[];
 
-  constructor(invalidFields: string[]) {
+  constructor(failureReasons: string[]) {
     super("Invalid params");
-    this.invalidFields = invalidFields;
+    this.validationFailureReasons = failureReasons;
     this.name = 'InvalidParamsError';
   }
 }
@@ -71,7 +71,7 @@ export function errorToResponse(
     res.status(400).send({
       message: err.message,
       type: err.name,
-      invalidFields: (err as InvalidParamsError).invalidFields,
+      validationFailureReasons: (err as InvalidParamsError).validationFailureReasons,
     })
   } else if (err.name === 'VoterTagAlreadyExistsError') {
     res.status(400).send({

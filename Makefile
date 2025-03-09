@@ -12,11 +12,10 @@ db-init:
 	@if [ -z "$$(psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$(db_user)'")" ]; then \
 		echo "Creating user $(db_user)..."; \
 		createuser $(db_user); \
-		psql -c "ALTER USER $(db_user) WITH PASSWORD '$(db_user)'"; \
 	else \
 		echo "User $(db_user) already exists."; \
 	fi
-	
+	@psql -c "ALTER USER $(db_user) WITH PASSWORD '$(db_user)'";
 	@echo "Granting privileges..."
 	@psql -c "GRANT ALL PRIVILEGES ON DATABASE $(db_name) TO $(db_user)"
 	@psql -d $(db_name) -c "GRANT ALL ON SCHEMA public TO $(db_user)"

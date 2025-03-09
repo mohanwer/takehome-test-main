@@ -3,6 +3,7 @@
  * fetch API that adds some default headers and error handling, and also
  * makes it easier to pass query parameters and JSON bodies.
  */
+
 export default async function makeApiRequest<T>(
   path: string,
   {
@@ -43,6 +44,9 @@ export default async function makeApiRequest<T>(
     try {
       const errorBodyParsed = await fetchResult.json();
       errorMessage = errorBodyParsed.message;
+      if (errorBodyParsed.hasOwnProperty("type") && errorBodyParsed.type === "InvalidParamsError") {
+        return Promise.reject(errorBodyParsed.validationFailureReasons.join(" "));
+      }
     } catch (_error) {
       // ignore
     }

@@ -1,14 +1,16 @@
 import {
+  Box,
   Card,
   CardContent,
   CircularProgress,
-  Container,
+  Container, Divider,
   Typography,
 } from "@mui/material";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
-import { Voter } from "../types";
+import { Voter, VoterResponse, VoterTag } from "../types";
 import makeApiRequest from "../util/makeApiRequest";
+import { TagSelector } from "../components/voterTag";
 
 type VoterStateLoading = {
   state: "LOADING";
@@ -17,6 +19,7 @@ type VoterStateLoading = {
 type VoterStateLoaded = {
   state: "LOADED";
   voter: Voter;
+  tags: VoterTag[];
 };
 
 type VoterStateError = {
@@ -26,7 +29,7 @@ type VoterStateError = {
 
 type VoterState = VoterStateLoading | VoterStateLoaded | VoterStateError;
 
-function VoterCardContent({ voter }: { voter: Voter }) {
+function VoterCardContent({ voter, tags }: { voter: Voter, tags: VoterTag[] }) {
   return (
     <>
       <Typography variant="h5" component="h2">
@@ -41,7 +44,8 @@ function VoterCardContent({ voter }: { voter: Voter }) {
       <Typography variant="body2" component="p">
         {voter.city}, {voter.state} {voter.zip}
       </Typography>
-      {/* TODO [Part 2]: add controls for adding and removing tags */}
+      <Divider sx={{ marginTop: 2, marginBottom: 2 }} />
+      <TagSelector voterId={voter.id} voterTags={tags} />
     </>
   );
 }
@@ -54,11 +58,12 @@ export default function VoterPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    makeApiRequest<Voter>(`/voters/${params.voterId}`)
-      .then((voter) => {
+    makeApiRequest<VoterResponse>(`/voters/${params.voterId}`)
+      .then((response) => {
         setVoterState({
           state: "LOADED",
-          voter,
+          voter: response.voter,
+          tags: response.tags,
         });
       })
       .catch((error: any) => {
@@ -90,7 +95,7 @@ export default function VoterPage() {
             </Typography>
           )}
           {voterState.state === "LOADED" && (
-            <VoterCardContent voter={voterState.voter} />
+            <VoterCardContent voter={voterState.voter} tags={voterState.tags} />
           )}
         </CardContent>
       </Card>

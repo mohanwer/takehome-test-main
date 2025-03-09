@@ -1,20 +1,28 @@
 import request from 'supertest';
-import { app } from '../../src/server';
 import { configDotenv } from "dotenv";
 import { afterAll, beforeAll } from "@jest/globals";
 import { createVoter, deleteVoter } from "../../src/voterService";
 import { faker } from '@faker-js/faker';
-import pool from "../../src/db";
-
-configDotenv({ path: '.env.test' })
+import {Express} from "express";
+import {createAppSettingsFromEnv} from "../../src/settings";
+import {createApp} from "../../src/app";
+import {withTransaction} from "../../src/db";
 
 describe('voter get endpoint', () => {
   let voterId: string;
+  let app: Express;
+
+  beforeAll(() => {
+    configDotenv({path: ".env.test"});
+    const settings = createAppSettingsFromEnv();
+    app = createApp(settings);
+  })
 
   beforeAll(
     async () => {
-      const client = await pool.connect();
-      let result = await createVoter(
+      const pool = app.locals.dbPool;
+      await withTransaction(pool, async (client) => {
+        let result = await createVoter(
         client,
         {
           firstName: faker.person.firstName(),
@@ -24,17 +32,18 @@ describe('voter get endpoint', () => {
           city: faker.location.city(),
           state: faker.location.state(),
           zip: faker.location.zipCode(),
-        }
-      );
-      voterId = result.id;
-      client.release();
+        });
+        voterId = result.id;
+      });
     }
   );
 
   afterAll(
     async () => {
-      const client = await pool.connect();
-      await deleteVoter(client, voterId);
+      const pool = app.locals.dbPool;
+      await withTransaction(pool, async (client) => {
+        await deleteVoter(client, voterId);
+      });
     }
   )
 

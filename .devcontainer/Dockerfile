@@ -19,7 +19,7 @@ RUN git clone https://github.com/asdf-vm/asdf.git --branch v0.16.0
 RUN make -C ./asdf build
 
 ARG USERNAME=developer
-ARG USER_UID=1001
+ARG USER_UID=990
 ARG USER_GID=$USER_UID
 
 RUN groupadd --gid $USER_GID $USERNAME \
@@ -32,12 +32,14 @@ RUN groupadd --gid $USER_GID $USERNAME \
 RUN chown -R $USERNAME:$USERNAME /asdf
 COPY install-dependencies.sh .
 RUN chmod +x ./install-dependencies.sh
+RUN mkdir /workspace
+RUN chown -R $USERNAME:$USERNAME /workspace
 USER $USERNAME
 
 RUN mkdir ~/.asdf
 RUN mkdir ~/.asdf/shims
 RUN mv /asdf/asdf ~/.asdf/asdf
-
+RUN chmod a+x ~/.asdf/shims
 RUN echo "export PATH=$PATH:$HOME/.asdf:$HOME/.asdf/shims" >> ~/.bashrc
 
 RUN ./install-dependencies.sh

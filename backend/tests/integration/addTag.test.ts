@@ -1,21 +1,27 @@
 import request from 'supertest';
-import { app } from '../../src/server';
 import { configDotenv } from "dotenv";
 import { afterAll, beforeAll } from "@jest/globals";
 import { createVoter, deleteVoter, Voter } from "../../src/voterService";
 import { faker } from '@faker-js/faker';
 import { withTransaction } from "../../src/db";
 import { addTag, deleteTag, Tag } from '../../src/tagService';
-
-configDotenv({ path: '.env.test' })
+import {createAppSettingsFromEnv} from "../../src/settings";
+import {
+  createApp,
+  ExpressA
+} from "../../src/app";
 
 describe('add tag endpoint', () => {
   let voter: Voter;
   let tag: Tag;
+  let app: ExpressA;
 
   beforeAll(
     async () => {
-      await withTransaction(async client => {
+      configDotenv({path: ".env.test"});
+      const settings = createAppSettingsFromEnv();
+      app = createApp(settings);
+      await withTransaction(app.locals.dbPool, async client => {
         voter = await createVoter(
           client,
           {
@@ -35,7 +41,7 @@ describe('add tag endpoint', () => {
 
   afterAll(
     async () => {
-      await withTransaction(async client => {
+      await withTransaction(app.locals.dbPool, async client => {
         await deleteVoter(client, voter.id);
         await deleteTag(client, tag.tagId);
       });
@@ -45,18 +51,16 @@ describe('add tag endpoint', () => {
   it('adds existing tag to voter', async () => {
     const response = await request(app).post(`/voters/${voter.id}/addTag`).send({ name: tag.name });
     expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('voter');
-    expect(response.body).toHaveProperty('tags');
-    expect(response.body.tags).toContainEqual({ voterTagId: expect.any(String), name: tag.name });
+    expect(response.body).toHaveProperty('voterTagId');
+    expect(response.body).toHaveProperty('name');
   });
 
   it('adds new tag to voter', async () => {
     const tagName = faker.lorem.word(3);
     const response = await request(app).post(`/voters/${voter.id}/addTag`).send({ name: tagName });
     expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('voter');
-    expect(response.body).toHaveProperty('tags');
-    expect(response.body.tags).toContainEqual({ voterTagId: expect.any(String), name: tagName });
+    expect(response.body).toHaveProperty('voterTagId');
+    expect(response.body).toHaveProperty('name');
   });
 
   it('returns 400 if voter id is not uuid', async () => {

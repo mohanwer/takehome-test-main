@@ -3,7 +3,7 @@ import {Pool, PoolClient} from "pg";
 
 
 export async function withTransaction(
-  fn: (client: PoolClient, ...args: any[]) => Promise<any>,
+  pool: Pool, fn: (client: PoolClient, ...args: any[]) => Promise<any>,
   ...args: any[]
 ) {
   const client = await pool.connect();
@@ -20,15 +20,8 @@ export async function withTransaction(
   }
 }
 
-// Construct a Postgres connection pool
-const pool = new Pool({
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
-
 // Helper to run a Knex query using our connection pool
-export async function knexQuery(query: Knex.QueryBuilder): Promise<any> {
+export async function knexQuery(pool: Pool, query: Knex.QueryBuilder): Promise<any> {
   const client = await pool.connect();
 
   try {
@@ -42,5 +35,3 @@ export async function knexQuery(query: Knex.QueryBuilder): Promise<any> {
 export const knex = knexConstructor({
   client: "pg",
 });
-
-export default pool;

@@ -3,7 +3,7 @@
   "dockerComposeFile": "./docker-compose.yml",
   "service": "dev_environment",
   "mounts": [
-    "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
+    "source=${localWorkspaceFolder},target=/workspace,type=bind"
   ],
   "workspaceFolder": "/workspace",
   "shutdownAction": "stopCompose",
