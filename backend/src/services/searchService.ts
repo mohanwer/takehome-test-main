@@ -1,89 +1,107 @@
 import { Knex } from "knex";
 import { Voter } from "../db/types";
 
-export const isSearchableField = (field: string): boolean => {
-  return Object.values(SearchFields).toString().includes(field);
-};
-
 export enum SearchFields {
-  firstName = "firstName",
-  lastName = "lastName",
-  address1 = "address1",
-  address2 = "address2",
-  city = "city",
-  state = "state",
-  zip = "zip",
+  FirstName = "firstName",
+  LastName = "lastName",
+  Address1 = "address1",
+  Address2 = "address2",
+  City = "city",
+  State = "state",
+  Zip = "zip",
 }
 
-const FieldToColumnMap: Record<SearchFields, string> = {
-  firstName: "first_name",
-  lastName: "last_name",
-  address1: "address1",
-  address2: "address2",
-  city: "city",
-  state: "state",
-  zip: "zip",
+const FIELD_TO_COLUMN_MAP: Record<SearchFields, string> = {
+  [SearchFields.FirstName]: "first_name",
+  [SearchFields.LastName]: "last_name",
+  [SearchFields.Address1]: "address1",
+  [SearchFields.Address2]: "address2",
+  [SearchFields.City]: "city",
+  [SearchFields.State]: "state",
+  [SearchFields.Zip]: "zip",
 };
+
+const NAME_SEARCH_LENGTH_LIMIT = 3;
+const DEFAULT_FUZZY_DISTANCE = 2;
+
+export const isSearchableField = (field: string): boolean =>
+  Object.values(SearchFields).includes(field as SearchFields);
 
 export const searchDbForField = (
   query: Knex.QueryBuilder,
   field: SearchFields,
   value: string
 ): void => {
-  const column = FieldToColumnMap[field];
+  const dbColumn = FIELD_TO_COLUMN_MAP[field];
+  const fieldSearchHandlers: Record<SearchFields, () => void> = {
+    [SearchFields.FirstName]: () => nameSearch(query, dbColumn, value),
+    [SearchFields.LastName]: () => nameSearch(query, dbColumn, value),
+    [SearchFields.Address1]: () => addressSearch(query, dbColumn, value, false),
+    [SearchFields.Address2]: () => addressSearch(query, dbColumn, value, true),
+    [SearchFields.City]: () => fuzzyMatch(query, dbColumn, value),
+    [SearchFields.Zip]: () => fuzzyMatch(query, dbColumn, value, 1),
+    [SearchFields.State]: () => exactMatch(query, dbColumn, value),
+  };
 
-  if (field === SearchFields.firstName || field === SearchFields.lastName) {
-    nameSearch(query, column, value);
-  } else if (field === SearchFields.address1) {
-    addressOneSearch(query, value);
-  } else if (field === SearchFields.address2) {
-    addressTwoSearch(query, value);
-  } else if (field === SearchFields.city) {
-    fuzzyMatch(query, column, value);
-  } else if (field === SearchFields.zip) {
-    fuzzyMatch(query, column, value, 1);
-  } else if (field === SearchFields.state) {
-    exactMatch(query, column, value);
-  }
+  fieldSearchHandlers[field]?.();
 };
 
 export const fuzzyMatch = (
   query: Knex.QueryBuilder,
-  column: string,
+  dbColumn: string,
   value: string,
-  distance: number = 2
+  distance: number = DEFAULT_FUZZY_DISTANCE
 ): void => {
   query
     .whereRaw(
-      `(${column} like ? or levenshtein(?, ${column}) <= ${distance})`,
-      [`${value}%`, value]
+      `(${dbColumn} LIKE ? OR levenshtein(?, ${dbColumn}) <= ?)`,
+      [`${value}%`, value, distance]
     )
-    .orderByRaw(`levenshtein(?, ${column})`, [value]);
+    .orderByRaw(`levenshtein(?, ${dbColumn})`, [value]);
 };
 
 export const exactMatch = (
   query: Knex.QueryBuilder,
-  column: string,
+  dbColumn: string,
   value: string
 ): void => {
-  query.where(column, value);
+  query.where(dbColumn, value);
 };
 
 export const beginsWith = (
   query: Knex.QueryBuilder,
-  column: string,
+  dbColumn: string,
   value: string
 ): void => {
-  query.whereLike(column, `${value}%`);
+  query.whereLike(dbColumn, `${value}%`);
 };
 
-export const endsWith = (
+const isAddressOnlyNumber = (value: string): boolean =>
+  value.split(" ").length === 1 && !isNaN(Number(value));
+
+const addressSearch = (
   query: Knex.QueryBuilder,
-  column: string,
+  dbColumn: string,
+  value: string,
+  allowEndsWith: boolean
+): void => {
+  if (isAddressOnlyNumber(value)) {
+    (allowEndsWith ? query.whereLike(dbColumn, `%${value}`) : beginsWith(query, dbColumn, value));
+  } else {
+    fuzzyMatch(query, dbColumn, value);
+  }
+};
+
+export const nameSearch = (
+  query: Knex.QueryBuilder,
+  dbColumn: string,
   value: string
 ): void => {
-  query.whereLike(column, `%${value}`);
+  value.length < NAME_SEARCH_LENGTH_LIMIT
+    ? beginsWith(query, dbColumn, value)
+    : fuzzyMatch(query, dbColumn, value);
 };
+
 
 const wordConfidence = (
   word1: string,
@@ -112,7 +130,7 @@ export const rowConfidence = (
   let maxConfidenceSummation = 0;
 
   for (const [searchField, searchValue] of searchParams) {
-    const columnName: string = FieldToColumnMap[searchField];
+    const columnName: string = FIELD_TO_COLUMN_MAP[searchField];
     const rowValue = row[columnName as keyof Voter];
     let searchI = 0,
       rowI = 0;
@@ -129,53 +147,3 @@ export const rowConfidence = (
 
   return Math.round((confidenceSummation / maxConfidenceSummation) * 100) / 100;
 };
-
-// If first/last name only have 2 or fewer characters, searches using begins with.
-// Otherwise, performs a fuzzy search.
-export const nameSearch = (
-  query: Knex.QueryBuilder,
-  column: string,
-  value: string
-): void => {
-  if (value.length < 3) {
-    beginsWith(query, column, value);
-  } else {
-    fuzzyMatch(query, column, value);
-  }
-};
-
-// Checks if the address1 input only starts with a number.
-// If so, uses a starts with search; otherwise, perform fuzzy.
-export const addressOneSearch = (
-  query: Knex.QueryBuilder,
-  value: string
-): void => {
-  const column = FieldToColumnMap[SearchFields.address1];
-  if (addressOnlyHasNumber(value)) {
-    beginsWith(query, column, value);
-  } else {
-    fuzzyMatch(query, column, value);
-  }
-};
-
-// If address2 is only a number then performs a begins with. Otherwise, performs fuzzy match.
-export const addressTwoSearch = (
-  query: Knex.QueryBuilder,
-  value: string
-): void => {
-  const column = FieldToColumnMap[SearchFields.address2];
-  if (addressOnlyHasNumber(value)) {
-    endsWith(query, column, value);
-  } else {
-    fuzzyMatch(query, column, value);
-  }
-};
-
-export const addressOnlyHasNumber = (value: string) => {
-  const splitValue = value.split(" ");
-  return splitValue.length === 1 && isNumber(value);
-};
-
-function isNumber(value: string) {
-  return !isNaN(Number(value));
-}

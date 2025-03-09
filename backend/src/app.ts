@@ -1,5 +1,5 @@
 import { AppSettings } from "./settings";
-import { Pool } from "pg";
+import { Pool, PoolConfig } from "pg";
 import express, { Express } from "express";
 import cors from "cors";
 import voterRoutes from "./routes/voterRoutes";
@@ -13,25 +13,38 @@ export interface ExpressWithLocals extends Express {
   };
 }
 
-export const createApp = (settings: AppSettings): ExpressWithLocals => {
-  const pool = new Pool({
-    ...settings.db,
-  });
+const ROUTES = {
+  VOTERS: "/voters",
+  SEARCH: "/search",
+};
 
-  const app = express();
-  app.locals = {
-    dbPool: pool,
-    appPort: settings.app.port,
-  };
+const setupMiddlewares = (app: Express) => {
   app.use(express.json());
   app.use(cors());
-  app.use("/voters", voterRoutes);
-  app.use("/search", searchRoutes);
-  app.use(errorToResponse);
 
+};
+
+const setupShutdownHandler = (app: ExpressWithLocals, dbPool: Pool) => {
   app.on("shutdown", async () => {
-    await pool.end();
+    await dbPool.end();
   });
+};
+
+export const createApp = (settings: AppSettings): ExpressWithLocals => {
+  const dbConfig: PoolConfig = { ...settings.db };
+  const dbPool = new Pool(dbConfig);
+
+  const app = express();
+
+  app.locals = {
+    dbPool,
+    appPort: settings.app.port,
+  };
+  setupMiddlewares(app);
+  app.use(ROUTES.VOTERS, voterRoutes);
+  app.use(ROUTES.SEARCH, searchRoutes);
+  app.use(errorToResponse);
+  setupShutdownHandler(app as ExpressWithLocals, dbPool);
 
   return app as ExpressWithLocals;
 };

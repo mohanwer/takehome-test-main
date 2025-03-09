@@ -7,8 +7,6 @@ export interface AppSettings {
     user: string;
     password: string;
     database: string;
-    // These are intentionally required. We should always set these in a production
-    // environment to sensible values.
     maxConnections: number;
     idleTimeoutMillis: number;
     connectionTimeoutMillis: number;
@@ -18,7 +16,14 @@ export interface AppSettings {
   };
 }
 
-const getEnv = (envVarName: string): string => {
+// Define default values for environment variables as constants
+const DEFAULT_MAX_CONNECTIONS = 20;
+const DEFAULT_IDLE_TIMEOUT_MS = 30000;
+const DEFAULT_CONNECTION_TIMEOUT_MS = 2000;
+const DEFAULT_APP_PORT = 9099;
+
+// Helper function for required environment variables
+const getRequiredEnv = (envVarName: string): string => {
   const value = process.env[envVarName];
   if (!value) {
     throw new SettingsNotFoundError(envVarName);
@@ -26,24 +31,26 @@ const getEnv = (envVarName: string): string => {
   return value;
 };
 
+// Helper function for optional environment variables with default values
+const getOptionalEnv = (envVarName: string, defaultValue: string): number => {
+  return parseInt(process.env[envVarName] || defaultValue);
+};
+
+// Main function to create AppSettings from environment variables
 export const createAppSettingsFromEnv = (): AppSettings => {
   return {
     db: {
-      host: getEnv("PGHOST"),
-      port: parseInt(getEnv("PGPORT")),
-      user: getEnv("PGUSER"),
-      password: getEnv("PGPASSWORD"),
-      database: getEnv("PGDATABASE"),
-      maxConnections: parseInt(process.env["PGMAXCONNECTIONS"] || "20"),
-      idleTimeoutMillis: parseInt(
-        process.env["PGIDLETIMEOUTMILLIS"] || "30000"
-      ),
-      connectionTimeoutMillis: parseInt(
-        process.env["PGCONNECTIONTIMEOUTMILLIS"] || "2000"
-      ),
+      host: getRequiredEnv("PGHOST"),
+      port: getOptionalEnv("PGPORT", "5432"),
+      user: getRequiredEnv("PGUSER"),
+      password: getRequiredEnv("PGPASSWORD"),
+      database: getRequiredEnv("PGDATABASE"),
+      maxConnections: getOptionalEnv("PGMAXCONNECTIONS", DEFAULT_MAX_CONNECTIONS.toString()),
+      idleTimeoutMillis: getOptionalEnv("PGIDLETIMEOUTMILLIS", DEFAULT_IDLE_TIMEOUT_MS.toString()),
+      connectionTimeoutMillis: getOptionalEnv("PGCONNECTIONTIMEOUTMILLIS", DEFAULT_CONNECTION_TIMEOUT_MS.toString()),
     },
     app: {
-      port: parseInt(process.env.PORT || "9099"),
+      port: getOptionalEnv("PORT", DEFAULT_APP_PORT.toString()),
     },
   };
 };
