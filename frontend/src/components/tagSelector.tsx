@@ -52,7 +52,6 @@ export function TagSelector({ voterId, voterTags }: { voterId: string; voterTags
     );
   };
 
-  // Load available tags on mount
   useEffect(() => {
     makeApiRequest<GetAllTagsResult>(`/voters/tags`).then((response) => {
       const tagOptions = response.tags.map((t) => ({ label: t.name, value: t.name }));
@@ -61,7 +60,6 @@ export function TagSelector({ voterId, voterTags }: { voterId: string; voterTags
     });
   }, []);
 
-  // Handlers for Autocomplete changes
   const handleAutocompleteChange = (
     _: unknown,
     _value: (string | Option)[],
