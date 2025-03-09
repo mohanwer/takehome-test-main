@@ -9,7 +9,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import { Voter, VoterResponse, VoterTag } from "../types";
 import makeApiRequest from "../util/makeApiRequest";
-import { TagSelector } from "../components/voterTag";
+import { TagSelector } from "../components/tagSelector";
 
 type VoterStateLoading = {
   state: "LOADING";
