@@ -17,14 +17,15 @@ export interface AddVoterTag {
 }
 
 const QUERY_TAG_BY_NAME = "SELECT id, name FROM tag WHERE name = $1";
-const QUERY_VOTER_TAG_BY_VOTER_ID = `SELECT voter_tag.id as voter_tag_id, tag.name 
-  FROM tag 
-  JOIN voter_tag ON tag.id = voter_tag.tag_id 
-  WHERE voter_tag.voter_id = $1`;
+const QUERY_VOTER_TAG_BY_VOTER_ID = `SELECT voter_tag.id as voter_tag_id, tag.name
+                                     FROM tag
+                                              JOIN voter_tag ON tag.id = voter_tag.tag_id
+                                     WHERE voter_tag.voter_id = $1`;
 const QUERY_ALL_TAGS = "SELECT id, name FROM tag";
-const QUERY_VOTER_TAGS_BY_VOTER_ID = `SELECT id, voter_id, tag_id 
-    FROM voter_tag 
-    WHERE voter_id = $1 AND tag_id = $2`;
+const QUERY_VOTER_TAGS_BY_VOTER_ID = `SELECT id, voter_id, tag_id
+                                      FROM voter_tag
+                                      WHERE voter_id = $1
+                                        AND tag_id = $2`;
 
 const INSERT_TAG = "INSERT INTO tag (name) VALUES ($1) RETURNING id";
 const INSERT_VOTER_TAG =
