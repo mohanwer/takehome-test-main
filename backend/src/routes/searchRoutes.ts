@@ -1,8 +1,8 @@
 import express, {Request, Response} from 'express';
 import {wrapAsyncRoute} from "./expressUtil";
-import {knex, knexQuery} from "./db";
+import {knex, knexQuery} from "./db/db";
 import {rowConfidence, isSearchableField, searchDbForField, SearchFields} from "./searchService";
-import {Voter} from "./db.types";
+import {Voter} from "./db/types";
 import {InvalidParamsError} from "./errors";
 
 const router = express.Router();

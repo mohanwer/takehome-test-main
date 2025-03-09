@@ -1,5 +1,5 @@
 import {Knex} from "knex";
-import {Voter} from "./db.types";
+import {Voter} from "./db/types";
 
 export const isSearchableField = (field: string): boolean => {
   return Object.values(SearchFields).toString().includes(field);

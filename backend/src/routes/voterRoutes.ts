@@ -2,7 +2,7 @@ import express, {Request, Response} from 'express';
 import {wrapAsyncRoute} from "./expressUtil";
 import {validate as uuidValidate} from "uuid";
 import {InvalidParamsError, VoterNotFoundError} from "./errors";
-import {withTransaction} from "./db";
+import {withTransaction} from "./db/db";
 import {getVoterById} from "./voterService";
 import { addVoterTag, getAllTags, getVoterTagsByVoterId, removeVoterTag } from "./tagService";
 
@@ -11,11 +11,12 @@ const router = express.Router();
 const INVALID_ID_MSG = 'id must be a valid uuid';
 const INVALID_NAME_MSG = 'name must be 2 or more characters';
 const INVALID_VOTER_TAG_ID_MSG = 'voterTagId must be a valid uuid';
+const INVALID_VOTER_ID = 'voterId must be a valid uuid';
 
 const validateGetVoterId = (req: Request): void => {
   const { id } = req.params;
     if (!id || !uuidValidate(id)) {
-      throw new InvalidParamsError(['id']);
+      throw new InvalidParamsError([INVALID_VOTER_ID]);
     }
 }
 
