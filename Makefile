@@ -32,20 +32,13 @@ db-table-create:
 		END LOOP; \
 	END \$$\$$;"
 	@echo "Running initialization script..."
-	@psql -d $(db_name) -f db-init-sql/tables.sql -U $(db_user)
+	@psql -d $(db_name) -f db-init-sql/docker-entrypoint-initdb.sql -U $(db_user)
 	@echo "Database reset complete."
-
-.PHONY: db-seed
-db-seed:
-	@echo "Seeding database..."
-	@psql -d $(db_name) -f db-init-sql/data.sql -U $(db_user)
-	@echo "Database seeding complete."
 
 .PHONY: db-build
 db-build:
 	@$(MAKE) db-init db_name=stw_takehome db_user=stw_takehome
 	@$(MAKE) db-table-create db_name=stw_takehome db_user=stw_takehome
-	@$(MAKE) db-seed db_name=stw_takehome db_user=stw_takehome
 
 .PHONY: test-db-build
 test-db-build:

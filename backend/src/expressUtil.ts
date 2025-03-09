@@ -6,12 +6,13 @@ import type express from "express";
  * Express next() function.
  */
 export function wrapAsyncRoute(
-  fn: (...args: Parameters<express.RequestHandler>) => Promise<void>
+	fn: (...args: Parameters<express.RequestHandler>) => Promise<void>
 ): express.RequestHandler {
-  return (...args) => fn(...args).catch(args[2]);
+	return (...args) => fn(...args).catch(args[2]);
 }
 
-export async function wrappedDbRoute(fn: (...args: Parameters<express.RequestHandler>) => Promise<void>
+export async function wrappedDbRoute(
+	fn: (...args: Parameters<express.RequestHandler>) => Promise<void>
 ): Promise<express.RequestHandler> {
-  return (...args) => fn(...args).catch(args[2]);
+	return (...args) => fn(...args).catch(args[2]);
 }

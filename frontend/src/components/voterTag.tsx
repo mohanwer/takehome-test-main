@@ -1,4 +1,4 @@
-import { AddTagResult, GetAllTagsResult, RemoveTagResult, Tag, VoterResponse, VoterTag } from '../types';
+import { AddTagResult, GetAllTagsResult, RemoveTagResult, VoterTag } from '../types';
 import {
   Autocomplete,
   AutocompleteChangeDetails,
@@ -13,7 +13,7 @@ import makeApiRequest from "../util/makeApiRequest";
 
 interface Option {
   label: string;
-  value: string;
+  value: string; 
 }
 
 const filter = createFilterOptions<Option>();
