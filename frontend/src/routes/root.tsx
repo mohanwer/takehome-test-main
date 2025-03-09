@@ -14,13 +14,14 @@ import {
   MenuItem,
   styled,
   TextField,
-  Typography,
+  Typography, useTheme,
 } from "@mui/material";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { SearchParams, VoterSearchResult } from "../types";
 import makeApiRequest from "../util/makeApiRequest";
 import { STATE_ABBREVIATIONS } from "../util/state";
+import theme from "../theme";
 
 type SearchResultStateEmpty = {
   state: "EMPTY";
@@ -56,6 +57,19 @@ const FormRow = styled("div")`
   & > .MuiFormControl-root {
     margin: 0 8px;
   }
+`;
+
+const SearchRow = styled("div")`
+  display: flex;
+  flex-direction: row;
+  //align-items: center;
+`
+
+const SearchColumn = styled("div")`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 `;
 
 // This is the card at the top of the page with the search form
@@ -155,6 +169,7 @@ function SearchCard({
 
 // This card displays a list of results
 function Results({ results }: { results: VoterSearchResult[] }) {
+
   if (results.length === 0) {
     // Empty state
     return (
@@ -169,6 +184,16 @@ function Results({ results }: { results: VoterSearchResult[] }) {
     );
   }
 
+  const colorFromConfidence = (confidence: number) => {
+    if (confidence > 0.9) {
+      return theme.palette.primary.main;
+    } else if (confidence > 0.7) {
+      return theme.palette.warning.main;
+    } else {
+      return theme.palette.error.main;
+    }
+  }
+
   const truncatedResults = results.slice(0, 25);
 
   return (
@@ -176,14 +201,16 @@ function Results({ results }: { results: VoterSearchResult[] }) {
       <CardContent>
         <Typography variant="h5">Results</Typography>
         <List>
-          {truncatedResults.map(({ voter, confidence: _confidence }) => (
+          {truncatedResults.map(({ voter, confidence }) => (
             <ListItem
               component={Link}
               to={`/voters/${voter.id}`}
               key={voter.id}
             >
               <ListItemAvatar>
-                <Person />
+                <div style={{color: colorFromConfidence(confidence)}}>
+                  <Person />
+                </div>
               </ListItemAvatar>
               <ListItemText
                 sx={{ paddingLeft: 1 }}
