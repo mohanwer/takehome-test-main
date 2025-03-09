@@ -25,6 +25,28 @@ const FieldToColumnMap: Record<SearchFields, string> = {
 	zip: "zip",
 };
 
+export const searchDbForField = (
+	query: Knex.QueryBuilder,
+	field: SearchFields,
+	value: string
+): void => {
+	const column = FieldToColumnMap[field];
+
+	if (field === SearchFields.firstName || field === SearchFields.lastName) {
+		nameSearch(query, column, value);
+	} else if (field === SearchFields.address1) {
+		addressOneSearch(query, value);
+	} else if (field === SearchFields.address2) {
+		addressTwoSearch(query, value);
+	} else if (field === SearchFields.city) {
+		fuzzyMatch(query, column, value);
+	} else if (field === SearchFields.zip) {
+		fuzzyMatch(query, column, value, 1);
+	} else if (field === SearchFields.state) {
+		exactMatch(query, column, value);
+	}
+};
+
 export const fuzzyMatch = (
 	query: Knex.QueryBuilder,
 	column: string,
@@ -61,28 +83,6 @@ export const endsWith = (
 	value: string
 ): void => {
 	query.whereLike(column, `%${value}`);
-};
-
-export const searchDbForField = (
-	query: Knex.QueryBuilder,
-	field: SearchFields,
-	value: string
-): void => {
-	const column = FieldToColumnMap[field];
-
-	if (field === SearchFields.firstName || field === SearchFields.lastName) {
-		nameSearch(query, column, value);
-	} else if (field === SearchFields.address1) {
-		addressOneSearch(query, value);
-	} else if (field === SearchFields.address2) {
-		addressTwoSearch(query, value);
-	} else if (field === SearchFields.city) {
-		fuzzyMatch(query, column, value);
-	} else if (field === SearchFields.zip) {
-		fuzzyMatch(query, column, value, 1);
-	} else if (field === SearchFields.state) {
-		exactMatch(query, column, value);
-	}
 };
 
 const wordConfidence = (
@@ -158,6 +158,7 @@ export const addressOneSearch = (
 	}
 };
 
+// If address2 is only a number then performs a begins with. Otherwise, performs fuzzy match.
 export const addressTwoSearch = (
 	query: Knex.QueryBuilder,
 	value: string
