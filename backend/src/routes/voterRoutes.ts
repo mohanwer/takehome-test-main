@@ -6,7 +6,7 @@ import { withTransaction } from "../db/db";
 import { getVoterById } from "../services/voterService";
 import {
   addVoterTag,
-  getAllTags,
+  getAllTags, getTagsContainingText,
   getVoterTagsByVoterId,
   removeVoterTag,
 } from "../services/tagService";
@@ -65,6 +65,19 @@ router.get(
     });
   })
 );
+
+router.get(
+  "/tags/search",
+  wrapAsyncRoute(async (req: Request, res: Response) => {
+    const { dbPool } = req.app.locals;
+
+    const text = (req.query.text as string) ?? '';
+    await withTransaction(dbPool, async (client) => {
+      const tags = await getTagsContainingText(client, text);
+      res.json({ tags: tags });
+    });
+  })
+)
 
 router.get(
   "/:id",
