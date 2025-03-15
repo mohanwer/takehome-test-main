@@ -25,7 +25,6 @@ const SqlQueries = {
     JOIN voter_tag ON tag.id = voter_tag.tag_id
     WHERE voter_tag.voter_id = $1`,
   QUERY_ALL_TAGS: "SELECT id, name FROM tag",
-  QUERY_TAGS_CONTAINING: "SELECT id, name FROM tag WHERE name LIKE $1 LIMIT 5",
   QUERY_VOTER_TAGS_BY_VOTER_ID: `
     SELECT id, voter_id, tag_id
     FROM voter_tag
@@ -88,11 +87,6 @@ export const getAllTags = async (db: PoolClient): Promise<Tag[]> => {
   const tagsResult = await db.query<DbTag>(SqlQueries.QUERY_ALL_TAGS);
   return tagsResult.rows.map((tag) => ({ tagId: tag.id, name: tag.name }));
 };
-
-export const getTagsContainingText = async (db:PoolClient, text: string): Promise<Tag[]> => {
-  const tagsResult = await db.query<DbTag>(SqlQueries.QUERY_TAGS_CONTAINING, [`%${text}%`]);
-  return tagsResult.rows.map((tag) => ({ tagId: tag.id, name: tag.name }));
-}
 
 // Add a voter tag
 export const addVoterTag = async (

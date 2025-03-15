@@ -1,7 +1,8 @@
 import {
   Autocomplete,
-  Chip, debounce,
-  FilterOptionsState,
+  Chip,
+  CircularProgress,
+  createFilterOptions, FilterOptionsState,
   FormControl,
   FormHelperText,
   TextField,
@@ -15,16 +16,17 @@ interface Option {
   value: string;
 }
 
+const filter = createFilterOptions<Option>();
+
 export function TagSelector({ voterId, voterTags }: { voterId: string; voterTags: VoterTag[] }) {
-  const initialTags = [...voterTags]
+  const [initialLoading, setInitialLoading] = useState(true);
   const [tags, setTags] = useState(voterTags);
   const [tagSelectList, setTagSelectList] = useState<Option[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [textBox, setTextBox] = useState("");
 
   const resetError = () => setErrorMsg(null);
 
-  const mapTagsToOptions = (tags: (VoterTag|{name: string})[]): Option[] =>
+  const mapTagsToOptions = (tags: VoterTag[]): Option[] =>
     tags.map((t) => ({ label: t.name, value: t.name }));
 
   const removeTag = (name: string) => {
@@ -51,36 +53,23 @@ export function TagSelector({ voterId, voterTags }: { voterId: string; voterTags
   };
 
   useEffect(() => {
-    const timeout = setTimeout(() =>
-    {
-      makeApiRequest<GetAllTagsResult>(`/voters/tags/search?text=${textBox}`)
-        .then((response) => {
-          const tagOptions = response.tags.map(t => ({ label: t.name, value: t.name }));
-          setTagSelectList(tagOptions);
-        })
-        .catch((error: any) => {
-          setErrorMsg(error.message);
-        })
-    }, 500);
-    return () => clearTimeout(timeout);
-  }, [textBox])
+    makeApiRequest<GetAllTagsResult>(`/voters/tags`).then((response) => {
+      const tagOptions = response.tags.map((t) => ({ label: t.name, value: t.name }));
+      setTagSelectList(tagOptions);
+      setInitialLoading(false);
+    });
+  }, []);
 
   const handleAutocompleteChange = (
     _: unknown,
-    value: (string | Option)[],
+    _value: (string | Option)[],
     reason: string,
     details?: { option: Option }
   ) => {
-    console.log(reason, details);
-    if (!details?.option) {
-      return;
-    }
-    if (reason === "createOption") {
-      addTag((details.option as unknown) as string);
-    } else if (reason === "selectOption") {
+    if ((reason === "selectOption" || reason === "createOption") && details?.option) {
       addTag(details.option.value);
     }
-    else if (reason === "removeOption") {
+    if (reason === "removeOption" && details?.option) {
       removeTag(details.option.value);
     }
   };
@@ -92,7 +81,7 @@ export function TagSelector({ voterId, voterTags }: { voterId: string; voterTags
     });
 
   const filterTagOptions = (options: Option[], params: FilterOptionsState<Option>) => {
-    const filtered = [...options];
+    const filtered = filter(options, params);
     const { inputValue } = params;
     const isExisting = options.some((option) => inputValue.toLowerCase() === option.value.toLowerCase());
     if (inputValue !== "" && !isExisting) {
@@ -101,6 +90,9 @@ export function TagSelector({ voterId, voterTags }: { voterId: string; voterTags
     return filtered;
   };
 
+  if (initialLoading) {
+    return <CircularProgress />;
+  }
 
   return (
     <FormControl error={Boolean(errorMsg)} sx={{ width: "100%" }}>
@@ -112,21 +104,13 @@ export function TagSelector({ voterId, voterTags }: { voterId: string; voterTags
         selectOnFocus
         handleHomeEndKeys
         freeSolo
-        defaultValue={mapTagsToOptions(initialTags)}
+        defaultValue={mapTagsToOptions(tags)}
         options={tagSelectList}
         onChange={handleAutocompleteChange}
         renderTags={renderTags}
         filterOptions={filterTagOptions}
         renderInput={(params) => (
-          <TextField
-            {...params}
-            label="Add tag"
-            error={Boolean(errorMsg)}
-            value={textBox}
-            onChange={(e) => {
-              setTextBox(e.target.value);
-            }}
-          />
+          <TextField {...params} label="Add tag" error={Boolean(errorMsg)} />
         )}
       />
       {errorMsg && <FormHelperText>{errorMsg}</FormHelperText>}
