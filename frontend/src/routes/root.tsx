@@ -48,36 +48,36 @@ type SearchResultState =
   | SearchResultStateError;
 
 const FormRow = styled("div")`
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  margin: 16px 0;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin: 16px 0;
 
-  & > .MuiFormControl-root {
-    margin: 0 8px;
-  }
+    & > .MuiFormControl-root {
+        margin: 0 8px;
+    }
 `;
 
 const SearchRow = styled("div")`
-  display: flex;
-  flex-direction: row;
-  //align-items: center;
+    display: flex;
+    flex-direction: row;
+    //align-items: center;
 `
 
 const SearchColumn = styled("div")`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 `;
 
 // This is the card at the top of the page with the search form
 function SearchCard({
-  onSearch,
-  params,
-  setParams,
-}: {
+                      onSearch,
+                      params,
+                      setParams,
+                    }: {
   onSearch: (params: SearchParams) => void;
   params: SearchParams;
   setParams: (params: SearchParams) => void;
@@ -208,17 +208,28 @@ function Results({ results }: { results: VoterSearchResult[] }) {
               key={voter.id}
             >
               <ListItemAvatar>
-                <div style={{color: colorFromConfidence(confidence)}}>
-                  <Person />
+                <div style={{ color: colorFromConfidence(confidence) }}>
+                  <Person/>
                 </div>
               </ListItemAvatar>
-              <ListItemText
-                sx={{ paddingLeft: 1 }}
-                primary={`${voter.firstName} ${voter.lastName}`}
-                secondary={`${voter.address1} ${voter.address2} ${voter.city}, ${voter.state} ${voter.zip}`}
-              />
+              <div style={{ display: 'flex', width: '100%' }}>
+                <ListItemText
+                  style={{ width: '75%' }}
+                  sx={{ paddingLeft: 1 }}
+                  primary={`${voter.firstName} ${voter.lastName} ${confidence}`}
+                  secondary={`${voter.address1} ${voter.address2} ${voter.city}, ${voter.state} ${voter.zip}`}
+                />
+                <ListItemText
+                  style={{
+                    width: '25%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    verticalAlign: 'top',
+                    justifyContent: 'center'
+                  }}>{confidence}</ListItemText>
+              </div>
               <ListItemSecondaryAction>
-                <ChevronRight />
+                <ChevronRight/>
               </ListItemSecondaryAction>
             </ListItem>
           ))}
@@ -314,7 +325,7 @@ export default function Root() {
           <CardContent
             sx={{ display: "flex", justifyContent: "center", margin: "20px" }}
           >
-            <CircularProgress />
+            <CircularProgress/>
           </CardContent>
         </Card>
       )}
@@ -328,7 +339,7 @@ export default function Root() {
         </Card>
       )}
       {searchResultState.state === "LOADED" && (
-        <Results results={searchResultState.results} />
+        <Results results={searchResultState.results}/>
       )}
     </Container>
   );

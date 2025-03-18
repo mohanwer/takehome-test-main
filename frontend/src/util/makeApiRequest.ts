@@ -3,6 +3,7 @@
  * fetch API that adds some default headers and error handling, and also
  * makes it easier to pass query parameters and JSON bodies.
  */
+import { InvalidParamsError, ServerError, VoterNotFoundError } from "../apiErrors";
 
 export default async function makeApiRequest<T>(
   path: string,
@@ -41,16 +42,18 @@ export default async function makeApiRequest<T>(
 
   if (!fetchResult.ok) {
     let errorMessage = `Error ${fetchResult.status} ${fetchResult.statusText}`;
-    try {
-      const errorBodyParsed = await fetchResult.json();
-      errorMessage = errorBodyParsed.message;
-      if (errorBodyParsed.hasOwnProperty("type") && errorBodyParsed.type === "InvalidParamsError") {
-        return Promise.reject(errorBodyParsed.validationFailureReasons.join(" "));
+    const errorBodyParsed = await fetchResult.json();
+    errorMessage = errorBodyParsed.message;
+    if (errorBodyParsed.hasOwnProperty("type")) {
+      if (errorBodyParsed.type === "InvalidParamsError") {
+        console.log('param error')
+        throw new InvalidParamsError(errorMessage, errorBodyParsed.validationFailureReasons);
+      } else if (errorBodyParsed.type === "VoterNotFoundError") {
+        throw new VoterNotFoundError(errorMessage, errorBodyParsed.voterId);
+      } else if (errorBodyParsed.type === "ServerError") {
+        throw new ServerError(errorMessage);
       }
-    } catch (_error) {
-      // ignore
     }
-
     throw new Error(errorMessage);
   }
 

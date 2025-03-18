@@ -20,21 +20,23 @@ export interface AddVoterTag {
 const SqlQueries = {
   QUERY_TAG_BY_NAME: "SELECT id, name FROM tag WHERE name = $1",
   QUERY_VOTER_TAG_BY_VOTER_ID: `
-    SELECT voter_tag.id as voter_tag_id, tag.name
-    FROM tag
-    JOIN voter_tag ON tag.id = voter_tag.tag_id
-    WHERE voter_tag.voter_id = $1`,
+      SELECT voter_tag.id as voter_tag_id, tag.name
+      FROM tag
+               JOIN voter_tag ON tag.id = voter_tag.tag_id
+      WHERE voter_tag.voter_id = $1`,
   QUERY_ALL_TAGS: "SELECT id, name FROM tag",
   QUERY_TAGS_CONTAINING: "SELECT id, name FROM tag WHERE name LIKE $1 LIMIT 5",
   QUERY_VOTER_TAGS_BY_VOTER_ID: `
-    SELECT id, voter_id, tag_id
-    FROM voter_tag
-    WHERE voter_id = $1 AND tag_id = $2`,
+      SELECT id, voter_id, tag_id
+      FROM voter_tag
+      WHERE voter_id = $1
+        AND tag_id = $2`,
   INSERT_TAG: "INSERT INTO tag (name) VALUES ($1) RETURNING id",
   INSERT_VOTER_TAG: "INSERT INTO voter_tag (voter_id, tag_id) VALUES ($1, $2) RETURNING id",
   DELETE_VOTER_TAG_BY_ID: "DELETE FROM voter_tag WHERE id = $1",
   DELETE_VOTER_TAG_BY_TAG_ID: "DELETE FROM voter_tag WHERE tag_id = $1",
   DELETE_TAG_BY_ID: "DELETE FROM tag WHERE id = $1",
+  DELETE_VOTER_TAG_BY_VOTER_ID: "DELETE FROM voter_tag WHERE voter_id = $1",
 };
 
 // Utility to query a single row and handle absence
@@ -89,7 +91,7 @@ export const getAllTags = async (db: PoolClient): Promise<Tag[]> => {
   return tagsResult.rows.map((tag) => ({ tagId: tag.id, name: tag.name }));
 };
 
-export const getTagsContainingText = async (db:PoolClient, text: string): Promise<Tag[]> => {
+export const getTagsContainingText = async (db: PoolClient, text: string): Promise<Tag[]> => {
   const tagsResult = await db.query<DbTag>(SqlQueries.QUERY_TAGS_CONTAINING, [`%${text}%`]);
   return tagsResult.rows.map((tag) => ({ tagId: tag.id, name: tag.name }));
 }
@@ -128,6 +130,13 @@ export const removeVoterTag = async (
 ): Promise<void> => {
   await db.query(SqlQueries.DELETE_VOTER_TAG_BY_ID, [voterTagId]);
 };
+
+export const removeVoterTagByVoterId = async (
+  db: PoolClient,
+  voterId: string
+): Promise<void> => {
+  await db.query(SqlQueries.DELETE_VOTER_TAG_BY_VOTER_ID, [voterId]);
+}
 
 // Delete a tag and associated voter tags
 export const deleteTag = async (

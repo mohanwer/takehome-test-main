@@ -1,5 +1,6 @@
 import {
-  Card,
+  Button,
+  Card, CardActions,
   CardContent,
   CircularProgress,
   Container, Divider,
@@ -43,8 +44,8 @@ function VoterCardContent({ voter, tags }: { voter: Voter, tags: VoterTag[] }) {
       <Typography variant="body2" component="p">
         {voter.city}, {voter.state} {voter.zip}
       </Typography>
-      <Divider sx={{ marginTop: 2, marginBottom: 2 }} />
-      <TagSelector voterId={voter.id} voterTags={tags} />
+      <Divider sx={{ marginTop: 2, marginBottom: 2 }}/>
+      <TagSelector voterId={voter.id} voterTags={tags}/>
     </>
   );
 }
@@ -87,16 +88,27 @@ export default function VoterPage() {
       </Typography>
       <Card>
         <CardContent>
-          {voterState.state === "LOADING" && <CircularProgress />}
+          {voterState.state === "LOADING" && <CircularProgress/>}
           {voterState.state === "ERROR" && (
             <Typography variant="h5" component="h2">
               Error: {voterState.error.message}
             </Typography>
           )}
           {voterState.state === "LOADED" && (
-            <VoterCardContent voter={voterState.voter} tags={voterState.tags} />
+            <>
+              <VoterCardContent voter={voterState.voter} tags={voterState.tags}/>
+
+            </>
           )}
         </CardContent>
+        <CardActions sx={{ margin: "0 16px 12px", justifyContent: "end" }}>
+          <Button
+            onClick={() => navigate(`/voters/${voterState.voter.id}/edit`)}
+            variant="contained"
+          >
+            Edit
+          </Button>
+        </CardActions>
       </Card>
     </Container>
   );

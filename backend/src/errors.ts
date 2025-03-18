@@ -1,6 +1,7 @@
 import express from "express";
 
 export type ErrorTypes =
+  | "ServerError"
   | "ApplicationError"
   | "SettingsNotFoundError"
   | "VoterNotFoundError"
@@ -86,7 +87,9 @@ export function errorToResponse(
       tagId: (err as VoterTagAlreadyExistsError).tagId,
     });
   } else {
-    console.log(err);
-    res.status(500).send({ message: "Internal Server Error" });
+    res.status(500).send({
+      message: err.message,
+      type: "ServerError"
+    });
   }
 }

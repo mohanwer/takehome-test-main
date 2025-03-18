@@ -3,12 +3,12 @@ import { wrapAsyncRoute } from "../expressUtil";
 import { validate as uuidValidate } from "uuid";
 import { InvalidParamsError, VoterNotFoundError } from "../errors";
 import { withTransaction } from "../db/db";
-import { getVoterById } from "../services/voterService";
+import { deleteVoter, getVoterById, updateVoter, UpdateVoter } from "../services/voterService";
 import {
   addVoterTag,
   getAllTags, getTagsContainingText,
   getVoterTagsByVoterId,
-  removeVoterTag,
+  removeVoterTag, removeVoterTagByVoterId,
 } from "../services/tagService";
 
 const router = express.Router();
@@ -54,6 +54,26 @@ const validateRemoveTag = (req: Request): void => {
     throw new InvalidParamsError(invalidParams);
   }
 };
+
+const validateUpdateVoter = (req: Request): void => {
+  const { params, body } = req;
+  const invalidParams = [];
+  if (!params.id || !uuidValidate(params.id)) {
+    invalidParams.push(INVALID_ID_MSG);
+  }
+  const attributes = ['lastName', 'address1', 'address2', 'city', 'state', 'zip'];
+  attributes.forEach(attr => {
+    if (!body[attr] || body[attr].length < 2) {
+      invalidParams.push(`${attr} must be 2 or more characters`);
+    }
+  });
+  if (!body.firstName) {
+    invalidParams.push('firstName must be 1 or more characters');
+  }
+  if (invalidParams.length > 0) {
+    throw new InvalidParamsError(invalidParams);
+  }
+}
 
 router.get(
   "/tags",
@@ -139,5 +159,45 @@ router.post(
     });
   })
 );
+
+router.post(
+  "/:id/update",
+  wrapAsyncRoute(async (req: Request, res: Response) => {
+    validateUpdateVoter(req);
+    const { params, body } = req;
+    const { dbPool } = req.app.locals;
+    const voterId = params.id;
+    const { firstName, lastName, address1, address2, city, state, zip } = body;
+    await withTransaction(dbPool, async (client) => {
+      const voter = await getVoterById(client, voterId);
+      if (!voter) {
+        throw new VoterNotFoundError(voterId);
+      }
+      const voterForUpdate: UpdateVoter = {
+        id: voterId, firstName, lastName, address1, address2, city, state, zip
+      }
+      const update = await updateVoter(client, voterForUpdate);
+      return res.json(update);
+    })
+  })
+)
+
+router.delete(
+  "/:id",
+  wrapAsyncRoute(async (req: Request, res: Response) => {
+    validateGetVoterId(req);
+    const { id } = req.params;
+    const { dbPool } = req.app.locals;
+    await withTransaction(dbPool, async (client) => {
+      const voter = await getVoterById(client, id);
+      if (!voter) {
+        throw new VoterNotFoundError(id);
+      }
+      await removeVoterTagByVoterId(client, id);
+      await deleteVoter(client, id);
+    })
+    res.json({ id });
+  })
+)
 
 export default router;

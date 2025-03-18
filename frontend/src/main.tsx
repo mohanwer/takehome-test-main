@@ -7,6 +7,7 @@ import Voter from "./routes/voter";
 
 import Root from "./routes/root";
 import theme from "./theme";
+import { UpdateVoterPage } from "./routes/updateVoter";
 
 const router = createBrowserRouter([
   {
@@ -17,6 +18,10 @@ const router = createBrowserRouter([
     path: "/voters/:voterId",
     element: <Voter />,
   },
+  {
+    path: "/voters/:voterId/edit",
+    element: <UpdateVoterPage />
+  }
 ]);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
